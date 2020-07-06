@@ -1,6 +1,4 @@
-<Project>
-
-  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk.Web" />
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
@@ -17,47 +15,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Shared\blazor_publish.Shared.csproj" />
   </ItemGroup>
-
-  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk.Web" />
-
-  <!-- Local hacking around -->
-  <Target Name="_EchoProjectAssetsJson" BeforeTargets="ResolvePackageAssets" Condition="'$(_PublishingBlazorWasmProject)' == 'true'">
-    <ReadLinesFromFile  File="$(ProjectAssetsFile)">
-      <Output
-                TaskParameter="Lines"
-                ItemName="ItemsFromFile"/>
-    </ReadLinesFromFile>
-
-    <Message Text="@(ItemsFromFile->'%(Identity)', '%0a')" />
-  </Target>
-
-  <Target Name="_GetBlazorWasmFilesForPublish" BeforeTargets="GetCopyToPublishDirectoryItems">
-    <MSBuild
-      Projects="$(MSBuildProjectFullPath)"
-      Targets="Restore"
-      Properties="BuildProjectReferences=false"
-      RemoveProperties="RuntimeIdentifier"
-      BuildInParallel="$(BuildInParallel)"
-      Condition="'$(_PublishingBlazorWasmProject)' != 'true' AND '$(RuntimeIdentifier)' != ' browser-wasm'" />
-
-    <MSBuild
-      Projects="$(MSBuildProjectFullPath)"
-      Targets="_GetBlazorWasmFilesForPublishInner"
-      Properties="BuildProjectReferences=false;ResolveAssemblyReferencesFindRelatedSatellites=true;_PublishingBlazorWasmProject=true"
-      RemoveProperties="NoBuild;RuntimeIdentifier"
-      BuildInParallel="$(BuildInParallel)"
-      Condition="'$(_PublishingBlazorWasmProject)' != 'true'">
-
-      <Output TaskParameter="TargetOutputs" ItemName="_ResolvedFileToPublish" />
-    </MSBuild>
-
-    <ItemGroup>
-      <AllPublishItemsFullPathWithTargetPath Include="@(_ResolvedFileToPublish->'%(FullPath)')">
-        <TargetPath>%(RelativePath)</TargetPath>
-        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      </AllPublishItemsFullPathWithTargetPath>
-    </ItemGroup>
-  </Target>
 
 </Project>
 
