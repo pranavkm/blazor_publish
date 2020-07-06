@@ -1,0 +1,64 @@
+<Project>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk.Web" />
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <UseBlazorWebAssembly>true</UseBlazorWebAssembly>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="5.0.0-preview.7.20330.10" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="5.0.0-preview.7.20330.10" PrivateAssets="all" />
+    <PackageReference Include="System.Net.Http.Json" Version="5.0.0-preview.7.20326.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\blazor_publish.Shared.csproj" />
+  </ItemGroup>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk.Web" />
+
+  <!-- Local hacking around -->
+  <Target Name="_EchoProjectAssetsJson" BeforeTargets="ResolvePackageAssets" Condition="'$(_PublishingBlazorWasmProject)' == 'true'">
+    <ReadLinesFromFile  File="$(ProjectAssetsFile)">
+      <Output
+                TaskParameter="Lines"
+                ItemName="ItemsFromFile"/>
+    </ReadLinesFromFile>
+
+    <Message Text="@(ItemsFromFile->'%(Identity)', '%0a')" />
+  </Target>
+
+  <Target Name="_GetBlazorWasmFilesForPublish" BeforeTargets="GetCopyToPublishDirectoryItems">
+    <MSBuild
+      Projects="$(MSBuildProjectFullPath)"
+      Targets="Restore"
+      Properties="BuildProjectReferences=false"
+      RemoveProperties="RuntimeIdentifier"
+      BuildInParallel="$(BuildInParallel)"
+      Condition="'$(_PublishingBlazorWasmProject)' != 'true' AND '$(RuntimeIdentifier)' != ' browser-wasm'" />
+
+    <MSBuild
+      Projects="$(MSBuildProjectFullPath)"
+      Targets="_GetBlazorWasmFilesForPublishInner"
+      Properties="BuildProjectReferences=false;ResolveAssemblyReferencesFindRelatedSatellites=true;_PublishingBlazorWasmProject=true"
+      RemoveProperties="NoBuild;RuntimeIdentifier"
+      BuildInParallel="$(BuildInParallel)"
+      Condition="'$(_PublishingBlazorWasmProject)' != 'true'">
+
+      <Output TaskParameter="TargetOutputs" ItemName="_ResolvedFileToPublish" />
+    </MSBuild>
+
+    <ItemGroup>
+      <AllPublishItemsFullPathWithTargetPath Include="@(_ResolvedFileToPublish->'%(FullPath)')">
+        <TargetPath>%(RelativePath)</TargetPath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </AllPublishItemsFullPathWithTargetPath>
+    </ItemGroup>
+  </Target>
+
+</Project>
+
+
